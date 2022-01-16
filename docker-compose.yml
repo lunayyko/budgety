@@ -1,0 +1,52 @@
+#docker-compose.yml 파일
+version: "3"
+services: 
+  payhere-backend: #컨테이너
+    container_name: payhere-backend #docker compose run 했을 때 뜨는 이름
+    build: 
+      context: .
+      dockerfile: ./Dockerfile-deploy #직접 빌드해서 쓸 도커파일 지정
+    depends_on:
+      - payhere_deploy_db #밑에 나오는 
+    restart: always #커맨드가 터지면 다시 올릴거냐
+    environment: # 시크릿키 직접 안쓰고 여기서 가져오겠다 하기 위한 환경설정
+      SQL_HOST: payhere_deploy_db # 이렇게 쓰면 이 컨테이너의 아이피로 됨 
+      SQL_PORT: 5432
+      DJANGO_SETTINGS_MODULE: payhere.settings.deploy
+    env_file: 
+      - .dockerenv.deploy.backend
+    command: #컨테이너가 커지면 실행되는 명령어
+      - bash #터미널
+      - -c #이걸 써야 여러줄 쓸 수 있다
+      - | #이걸 써야 여러줄 쓸 수 있다
+        python manage.py wait_for_db_connected -t 120 
+        python manage.py migrate
+        python manage.py collectstatic
+        gunicorn payhere.wsgi:application --bind 0.0.0.0:8000
+    volumes: #위 : 필요한 명령어를 쭉 치고 구니콘은 진짜 서버 돌리는 용, payhere이 프로젝트명 나머지는 구니콘 명령어
+      - .:/usr/src/app/ # 이 컴터의 위치와 : 도커의 위치 동기화(도커파일의 워킹 디렉토리 설정해놓은 것 WORKDIR) 
+
+  payhere_deploy_db: #이 컨테이너가 실행될 때까지 기다린다
+    container_name: payhere_deploy_db
+    image: postgres # 도커 허브에서 받아서 쓰는 포스트그레스 이미지
+    restart: always
+    volumes: #포스트그레스 이미지대로 세팅한거, 이렇게 데이터를 저장해줘야 컨테이너가 다운되도 데이터가 안 날아감
+      - ./postgresql/data:/var/lib/postgresql/data
+    environment: #포스트그래스 아이디 비번
+      - POSTGRES_INITDB_ARGS=--encoding=UTF-8
+      - TZ="Asia/Seoul"
+    env_file:
+      - .dockerenv.deploy.db
+
+  payhere_nginx: #컨테이너
+    image: nginx #엔지닉스는 스태틱 웹서버 구니콘은 다이나믹 웹서버 
+    container_name: payhere_nginx
+    volumes:
+      - ./config/nginx:/etc/nginx/conf.d
+      - ./static:/static
+    ports:
+      - "8021:8021" #로컬 : 쏴주는 포트끼리 연결
+    environment:
+      - TZ="Asia/Seoul"
+    depends_on:
+      - payhere-backend
