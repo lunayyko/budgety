@@ -13,9 +13,8 @@ class User(models.Model):
         db_table = 'users'
 
 class Book(TimeStampModel, SoftDeleteModel): 
-    user        = models.ForeignKey(User, on_delete=models.CASCADE, db_column='user_id')
-    change      = models.IntegerField(null=True)
+    user        = models.ForeignKey(User, on_delete=models.CASCADE)
+    amount      = models.IntegerField(null=True)
     memo        = models.CharField(max_length=100, null=True)
-    
     class Meta:
         db_table = 'books'

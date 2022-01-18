@@ -1,9 +1,10 @@
 from django.urls import path
-from .views      import SignUp, SignIn, BookList, Book
+from .views      import SignUp, SignIn, BookView, BookLog, BookModify
 
 urlpatterns = [
-    path("book", BookList.as_view()),
-    path("book/<int:post_id>", Book.as_view()),
+    path("book", BookView.as_view()), #가계부 작성 및 리스트 확인
+    path("booklog", BookLog.as_view()), #전체 로그 확인(삭제한 내역 포함)
+    path("book/<int:book_id>", BookModify.as_view()), #수정 및 삭제
     path("signup", SignUp.as_view()),
     path("signin", SignIn.as_view()),
 ]

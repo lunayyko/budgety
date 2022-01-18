@@ -1,15 +1,15 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-import json, re, bcrypt, jwt
+import json, re, bcrypt, jwt, datetime
 
 from django.views          import View
 from django.http           import JsonResponse
 
-from django.core.paginator  import Paginator, EmptyPage, PageNotAnInteger
+from django.db.models       import Sum
 from django.core.exceptions import ObjectDoesNotExist
 
-from  my_settings           import SECRET_KEY
+from  my_settings           import SECRET_KEY, ALGORITHM
 from .models                import User, Book
 from core.decorators        import login_decorator
 
@@ -49,10 +49,12 @@ class SignIn(View):
 
             if not User.objects.filter(email = email).exists():
                 return JsonResponse({'MESSAGE':'EMAIL_NOT_EXIST'}, status = 401)
-
-            if bcrypt.checkpw(password.encode('utf-8'),User.objects.get(email=email).password.encode('utf-8')):
-                token = jwt.encode({'id':User.objects.get(email=email).id}, SECRET_KEY)
             
+            user = User.objects.get(email=email)
+
+            if bcrypt.checkpw(password.encode('utf-8'),user.password.encode('utf-8')):
+                token = jwt.encode({'user_id':user.id}, SECRET_KEY, algorithm=ALGORITHM)
+                
                 return JsonResponse({'TOKEN': token}, status = 200)
 
             return JsonResponse({'MESSAGE':'INVALID_USER'}, status=401)
@@ -60,36 +62,111 @@ class SignIn(View):
         except KeyError:
             return JsonResponse({'MESSAGE':'KEY_ERROR'}, status = 400)
 
-class Book(View):
+class BookView(View):
     @login_decorator
     def post(self, request):
         try:
             data   = json.loads(request.body)
 
             Book.objects.create(
+                memo    = data.get('memo'),
                 user_id = request.user.id,
-                change  = data['change'],
-                memo    = data.get('memo')
+                amount  = data['amount']
             )
-
-            return JsonResponse({'MESSAGE': 'SUCCEESS'}, status = 200)
+            return JsonResponse({'MESSAGE': 'SUCCESS'}, status = 200)
             
         except KeyError:
             return JsonResponse({'MESSAGE':'KEY_ERROR'}, status = 400)
-
-class BookList(View):
+    
+    @login_decorator
     def get(self, request):
         try:
-            books = Book.objects.filter(user_id=request.user.id, is_deleted=False)
+            books = Book.objects.filter(user_id = request.user.id, is_deleted=False)
 
-            result = [{
-                "change"     : book.change,
-                "memo"       : book.memo,
-                "created_at" : book.created_at
+            results = [{
+                "book_id"    : book.id,
+                "created_at" : book.created_at.date(),
+                "updated_at" : book.updated_at.date(),
+                "amount"     : book.amount,
+                "memo"       : book.memo
             } for book in books]
 
-            return JsonResponse({'RESULT': result}, status = 200)
+            total = Book.objects.all().aggregate(Sum('amount'))
+            
+            return JsonResponse({'results': results, 'total' : total }, status = 200)
+            
+        except KeyError:
+            return JsonResponse({'MESSAGE':'KEY_ERROR'}, status = 400)
+        except ObjectDoesNotExist:
+            return JsonResponse({'MESSAGE':'NOT_EXIST'}, status = 400)
+
+class BookLog(View):
+    @login_decorator
+    def get(self, request):
+        try:
+            books = Book.objects.filter(user_id=request.user.id)
+
+            results = [{
+                "created_at" : book.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+                "updated_at" : book.updated_at.strftime("%Y-%m-%d %H:%M:%S"),
+                "id"         : book.id,
+                "amount"     : book.amount,
+                "memo"       : book.memo,
+                "is_deleted" : book.is_deleted,
+                "deleted_at" : book.deleted_at.strftime("%Y-%m-%d %H:%M:%S") if book.deleted_at is not None else None
+            } for book in books]
+
+            return JsonResponse({'results': results}, status = 200)
 
         except KeyError:
             return JsonResponse({'MESSAGE':'KEY_ERROR'}, status = 400)
 
+class BookModify(View):
+    @login_decorator
+    def get(self, request, book_id):
+        try:
+            book = Book.objects.get(user_id=request.user.id, id = book_id)
+
+            result = {
+                "created_at" : book.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+                "updated_at" : book.updated_at.strftime("%Y-%m-%d %H:%M:%S"),
+                "amount"     : book.amount,
+                "memo"       : book.memo,
+                "is_deleted" : "no" if book.is_deleted is False else "yes",
+                "deleted_at" : book.deleted_at.strftime("%Y-%m-%d %H:%M:%S") if book.deleted_at is not None else None
+            }
+            return JsonResponse({'result': result}, status = 200)
+            
+        except KeyError:
+            return JsonResponse({'MESSAGE':'KEY_ERROR'}, status = 400)
+        except ObjectDoesNotExist:
+            return JsonResponse({'MESSAGE':'NOT_EXIST'}, status = 400)
+
+    @login_decorator
+    def patch(self, request, book_id):
+        try:
+            data   = json.loads(request.body)
+            book = Book.objects.filter(user_id=request.user.id, id = book_id)
+            
+            book.update(
+                memo    = data.get('memo'),
+                amount  = data['amount']
+            )
+
+            return JsonResponse({'MESSAGE': 'SUCCESS'}, status = 200)
+
+        except KeyError:
+            return JsonResponse({'MESSAGE':'KEY_ERROR'}, status = 400)
+    
+    @login_decorator
+    def delete(self, request, book_id):
+        try:
+            book = Book.objects.get(user_id=request.user.id, id = book_id)
+            book.is_deleted = True
+            book.deleted_at = datetime.datetime.now()
+            book.save()
+
+            return JsonResponse({'MESSAGE': 'SUCCESS'}, status = 200)
+
+        except KeyError:
+            return JsonResponse({'MESSAGE':'KEY_ERROR'}, status = 400)

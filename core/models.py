@@ -9,8 +9,8 @@ class TimeStampModel(models.Model):
 
 
 class SoftDeleteModel(models.Model):
-    deleted_at = models.DateTimeField('삭제일', null=True, default=None)
-    is_deleted   = models.BooleanField(default=False, verbose_name="Is Deleted")
+    deleted_at   = models.DateTimeField('삭제일', null=True, default=None)
+    is_deleted   = models.BooleanField(default=False)
 
     class Meta:
         abstract = True
