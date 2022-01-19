@@ -170,3 +170,16 @@ class BookModify(View):
 
         except KeyError:
             return JsonResponse({'MESSAGE':'KEY_ERROR'}, status = 400)
+    
+    @login_decorator
+    def post(self, request, book_id):
+        try:
+            book = Book.objects.get(user_id=request.user.id, id = book_id)
+            book.is_deleted = False
+            book.deleted_at = None
+            book.save()
+
+            return JsonResponse({'MESSAGE': 'SUCCESS'}, status = 200)
+
+        except KeyError:
+            return JsonResponse({'MESSAGE':'KEY_ERROR'}, status = 400)
