@@ -15,54 +15,35 @@
 
 ### Local 개발 및 테스트용
 
-1. miniconda를 설치한다. ([https://docs.conda.io/en/latest/miniconda.html](https://docs.conda.io/en/latest/miniconda.html))
-2. 해당프로젝트를 clone 하고, 프로젝트 폴더로 들어간다.
+1. 해당프로젝트를 clone 하고, 프로젝트 폴더로 들어간다.
     ```bash
     git clone https://github.com/lunayyko/budgety.git
     cd budgety
     ```
-3. 가상 환경을 만들고 프로젝트에 사용한 python package를 받는다.
-    ```bash
-    conda create -n payhere python=3.8
-    conda activate payhere
 
-    pip install -r requirements.txt 
-    ```
-4. manage.py가 있는 디렉토리 상에 아래의 내용이 포함된 my_settings.py파일을 추가한다.
+2. manage.py가 있는 디렉토리 상에 아래의 내용이 포함된 my_settings.py파일을 추가한다.
     ```python
     SECRET_KEY = '랜덤한 특정 문자열'
-
     DATABASES = {
         'default' : {
             'ENGINE': 'django.db.backends.mysql',
-            'NAME': 'payhere',
-            'USER': 'root',
-            'PASSWORD': '1234',
-            'HOST': '127.0.0.1',
+            'NAME': 'payhere_db',
+            'USER': 'myuser',
+            'PASSWORD': 'mypass',
+            'HOST': '172.17.0.1',
             'PORT': '3306',
+            'OPTIONS'  :  {
+                'init_command' : "SET sql_mode='STRICT_TRANS_TABLES'"
+            },
         }
     }
-
     ALGORITHM = 'HS256'
     ```
 
-3. 데이터베이스를 생성한다
+3. docker-compose를 통해서 db와 서버를 실행시킨다. 
     ```bash
-    mysql.server start
-    mysql -u root -p
+    docker-compose up
     ```
-    ```sql
-    mysql > create database payhere character set utf8mb4 collate utf8mb4_general_ci;
-    ```
-
-4. 도커 이미지와 컨테이너를 생성한다.
-    ```bash
-    docker build -t payhere:0.1.0
-    #0.1.0버전이라는 태그를 사용하는 도커 이미지를 생성한다.
-    docker run --namee linux payhere:0.1.0
-    #linux라는 컨테이너를 생성하고 실행한다.
-    ```
-
 
 ## 구현 기능
 ### 회원가입, 로그인

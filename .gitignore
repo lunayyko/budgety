@@ -471,3 +471,12 @@ zsdoc/data
 my_settings.py
 .dockerenv*
 db.sqlite
+
+# docker sql
+mysql
+.dockerenv*
+
+#static
+static
+
+!wan
