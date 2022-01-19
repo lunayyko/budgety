@@ -11,53 +11,57 @@
 
 [POSTMAN API 문서](https://documenter.getpostman.com/view/16843815/UVXnFYtG)
 
-## 실행방법
-1.원하는 경로에 해당 프로젝트를 깃 클론 받는다
-```terminal
-git clone https://github.com/lunayyko/budgety.git
-```
+## 설치 및 실행방법
 
-2.manage.py가 있는 디렉토리 상에 아래의 내용이 포함된 my_settings.py파일을 추가한다.
-```python
-SECRET_KEY = '랜덤한 특정 문자열'
+### Local 개발 및 테스트용
 
-DATABASES = {
-    'default' : {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'payhere',
-        'USER': 'root',
-        'PASSWORD': '1234',
-        'HOST': '127.0.0.1',
-        'PORT': '3306',
+1. miniconda를 설치한다. ([https://docs.conda.io/en/latest/miniconda.html](https://docs.conda.io/en/latest/miniconda.html))
+2. 해당프로젝트를 clone 하고, 프로젝트 폴더로 들어간다.
+    ```bash
+    git clone https://github.com/lunayyko/budgety.git
+    cd budgety
+    ```
+3. 가상 환경을 만들고 프로젝트에 사용한 python package를 받는다.
+    ```bash
+    conda create -n payhere python=3.8
+    conda activate payhere
+
+    pip install -r requirements.txt 
+    ```
+4. manage.py가 있는 디렉토리 상에 아래의 내용이 포함된 my_settings.py파일을 추가한다.
+    ```python
+    SECRET_KEY = '랜덤한 특정 문자열'
+
+    DATABASES = {
+        'default' : {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': 'payhere',
+            'USER': 'root',
+            'PASSWORD': '1234',
+            'HOST': '127.0.0.1',
+            'PORT': '3306',
+        }
     }
-}
 
-ALGORITHM = 'HS256'
-```
+    ALGORITHM = 'HS256'
+    ```
 
 3. 데이터베이스를 생성한다
-```bash
-mysql.server start
-mysql -u root -p
-```
-```sql
-mysql > create database payhere character set utf8mb4 collate utf8mb4_general_ci;
-```
-4. 가상환경을 만들고 실행한다(미니콘다 설치 필요)
-```bash
-conda create -n payhere python=3.8
-conda activate payhere
-```
+    ```bash
+    mysql.server start
+    mysql -u root -p
+    ```
+    ```sql
+    mysql > create database payhere character set utf8mb4 collate utf8mb4_general_ci;
+    ```
 
-4. 라이브러리들을 설치한다
-```python
-pip install -r requirements.txt 
-```
-
-5. 서버를 실행한다(파이썬이 설치 필요)
-```python
-python manage.py runserver
-```
+4. 도커 이미지와 컨테이너를 생성한다.
+    ```bash
+    docker build -t payhere:0.1.0
+    #0.1.0버전이라는 태그를 사용하는 도커 이미지를 생성한다.
+    docker run --namee linux payhere:0.1.0
+    #linux라는 컨테이너를 생성하고 실행한다.
+    ```
 
 
 ## 구현 기능
