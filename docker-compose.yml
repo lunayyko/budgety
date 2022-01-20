@@ -1,12 +1,12 @@
-# 파일 규격 버전
 version: "3"
-# 이 항목 밑에 실행하려는 컨테이너 들을 정의
 services:
   payhere-backend:
     container_name: payhere-backend
     build:
       context: .
       dockerfile: ./Dockerfile
+    ports:
+      - "8000:8000"
     depends_on:
       - payhere_deploy_db 
     restart: always
@@ -20,35 +20,27 @@ services:
       - bash 
       - -c 
       - | 
-        python manage.py wait_for_db_connected -t 120 
+        /wait_for_db_connected -t 120 
         python manage.py migrate
         python manage.py collectstatic
         gunicorn payhere.wsgi:application --bind 0.0.0.0:8000
     volumes: 
       - .:/usr/src/app/ 
 
-  # 서비스 명
   payhere_deploy_db:
+    container_name: payhere_deploy_db
     user: "1000:50"
-    # 사용할 이미지
     image: mysql:5.7
     restart: always
-    # 컨테이너 이름 설정
-    container_name: payhere_db
-    # 접근 포트 설정 (컨테이너 외부:컨테이너 내부)
     ports:
       - "3306:3306"
-    # -e 옵션 
     environment: 
-      # MYSQL 패스워드 설정 옵션
-      MYSQL_DATABASE: payhere
+      MYSQL_DATABASE: payhere_deploy_db
       MYSQL_USER: myuser
       MYSQL_PASSWORD: mypass
       MYSQL_ROOT_PASSWORD: rootpass
-    # 명령어 실행 (한글 인코딩 관련)
     command:
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_unicode_ci
     volumes:
-      # -v 옵션 (다렉토리 마운트 설정)
       - ./mysql/data:/var/lib/mysql

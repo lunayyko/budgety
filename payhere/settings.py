@@ -26,7 +26,7 @@ DATABASES = DATABASES
 DEFAULT_AUTO_FIELD='django.db.models.AutoField' 
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ['*']
 APPEND_SLASH = False
